@@ -5,15 +5,19 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Global prefix for all routes: /api/v1/...
   app.setGlobalPrefix('api/v1');
 
-  // Auto-validate incoming request bodies (activated when DTOs are added)
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, transform: true }),
+  );
 
-  // Allow frontend to call the API during development
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000',
+      'https://isac-plum.vercel.app',
+      'https://isac-g06iyprf3-isachubs-projects.vercel.app',
+    ],
+    credentials: true,
   });
 
   const port = process.env.PORT || 3001;
