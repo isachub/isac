@@ -10,6 +10,7 @@ type RequestOptions = {
 
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, auth = true } = opts;
+  const url = `${BASE}${path}`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -17,28 +18,43 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
 
   if (auth) {
     const token = getToken();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
   }
+
+  console.log('Sending request to:', url);
 
   let res: Response;
   try {
-    res = await fetch(`${BASE}${path}`, {
+    res = await fetch(url, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-  } catch {
-    throw new Error('Could not reach the server. Please check your connection.');
+  } catch (error) {
+    console.error('FETCH FAILED:', error);
+    console.error('BASE =', BASE);
+    console.error('PATH =', path);
+    console.error('FULL URL =', url);
+    throw new Error(`Could not reach the server: ${url}`);
   }
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message ?? 'Request failed');
+    const text = await res.text().catch(() => '');
+    console.error('HTTP ERROR:', res.status, text);
+
+    try {
+      const parsed = text ? JSON.parse(text) : null;
+      throw new Error(parsed?.message ?? `Request failed with status ${res.status}`);
+    } catch {
+      throw new Error(text || `Request failed with status ${res.status}`);
+    }
   }
 
   const contentType = res.headers.get('content-type') ?? '';
   if (contentType.includes('application/pdf')) {
-    return res.blob() as unknown as T;
+    return (await res.blob()) as unknown as T;
   }
 
   return res.json();
@@ -73,7 +89,11 @@ export type Profile = {
 
 export const profileApi = {
   get: () => request<Profile | null>('/users/profile'),
-  update: (data: Profile) => request<Profile>('/users/profile', { method: 'PUT', body: data }),
+  update: (data: Profile) =>
+    request<Profile>('/users/profile', {
+      method: 'PUT',
+      body: data,
+    }),
 };
 
 export type Application = {
@@ -90,9 +110,31 @@ export type Application = {
 
 async function downloadPdf(url: string, filename: string): Promise<void> {
   const token = getToken();
-  if (!token) throw new Error('Not authenticated');
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) throw new Error('Download failed');
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  console.log('Downloading PDF from:', url);
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    console.error('PDF FETCH FAILED:', error);
+    console.error('PDF URL =', url);
+    throw new Error(`Could not reach the server: ${url}`);
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    console.error('PDF HTTP ERROR:', res.status, text);
+    throw new Error(text || `Download failed with status ${res.status}`);
+  }
+
   const blob = await res.blob();
   const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -104,14 +146,19 @@ async function downloadPdf(url: string, filename: string): Promise<void> {
 
 export const applicationsApi = {
   create: (data: Omit<Application, 'id' | 'status' | 'createdAt'>) =>
-    request<Application>('/applications', { method: 'POST', body: data }),
+    request<Application>('/applications', {
+      method: 'POST',
+      body: data,
+    }),
 
   list: () => request<Application[]>('/applications'),
 
   get: (id: string) => request<Application>(`/applications/${id}`),
 
   generate: (id: string) =>
-    request<Application>(`/applications/${id}/generate`, { method: 'POST' }),
+    request<Application>(`/applications/${id}/generate`, {
+      method: 'POST',
+    }),
 
   downloadCv: (id: string) =>
     downloadPdf(`${BASE}/applications/${id}/pdf/cv`, 'Lebenslauf.pdf'),
