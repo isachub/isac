@@ -1,6 +1,6 @@
 import { getToken } from './auth';
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
 type RequestOptions = {
   method?: string;
@@ -20,7 +20,7 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     if (token) headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE}/v1${path}`, {
+  const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -31,7 +31,6 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     throw new Error(error.message ?? 'Request failed');
   }
 
-  // PDF endpoints return binary — caller handles those separately
   const contentType = res.headers.get('content-type') ?? '';
   if (contentType.includes('application/pdf')) {
     return res.blob() as unknown as T;
@@ -40,7 +39,6 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   return res.json();
 }
 
-// ─── Auth ────────────────────────────────────────
 export const authApi = {
   register: (email: string, password: string) =>
     request<{ accessToken: string }>('/auth/register', {
@@ -57,7 +55,6 @@ export const authApi = {
     }),
 };
 
-// ─── Profile ──────────────────────────────────────
 export type Profile = {
   id?: string;
   fullName?: string;
@@ -74,7 +71,6 @@ export const profileApi = {
   update: (data: Profile) => request<Profile>('/users/profile', { method: 'PUT', body: data }),
 };
 
-// ─── Applications ─────────────────────────────────
 export type Application = {
   id: string;
   targetType: 'JOB' | 'AUSBILDUNG' | 'STUDIUM';
@@ -113,8 +109,8 @@ export const applicationsApi = {
     request<Application>(`/applications/${id}/generate`, { method: 'POST' }),
 
   downloadCv: (id: string) =>
-    downloadPdf(`${BASE}/v1/applications/${id}/pdf/cv`, 'Lebenslauf.pdf'),
+    downloadPdf(`${BASE}/applications/${id}/pdf/cv`, 'Lebenslauf.pdf'),
 
   downloadLetter: (id: string) =>
-    downloadPdf(`${BASE}/v1/applications/${id}/pdf/letter`, 'Motivationsschreiben.pdf'),
+    downloadPdf(`${BASE}/applications/${id}/pdf/letter`, 'Motivationsschreiben.pdf'),
 };
