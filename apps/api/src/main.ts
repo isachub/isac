@@ -1,8 +1,21 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 
+const logger = new Logger('Bootstrap');
+
+function validateEnv() {
+  const required = ['DATABASE_URL', 'JWT_SECRET'];
+  const missing = required.filter((key) => !process.env[key]);
+  if (missing.length) {
+    logger.error(`Missing required environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
+
 async function bootstrap() {
+  validateEnv();
+
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api/v1');
