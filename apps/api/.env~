@@ -1,0 +1,11 @@
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/isac?schema=public"
+
+PORT=3001
+FRONTEND_URL=http://localhost:3000
+
+# Added in step 4
+JWT_SECRET=change-this-before-production
+JWT_EXPIRES_IN=7d
+
+# Added in step 7
+ANTHROPIC_API_KEY=sk-ant-...

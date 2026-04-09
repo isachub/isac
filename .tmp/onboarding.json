@@ -1,0 +1,58 @@
+{
+  "onboarding": {
+    "section_1_who": {
+      "name": "Salima",
+      "role": ["DevOps Engineer", "Founder"],
+      "location": "Germany",
+      "centre": "ISAC",
+      "centre_focus": "Helping people succeed in Germany",
+      "services": [
+        "CV and motivation letters",
+        "Ausbildung applications",
+        "Job applications",
+        "University applications"
+      ],
+      "background": "DevOps — builds systems and automation"
+    }
+    ,
+    "section_2_business": {
+      "delivery_channels": ["WhatsApp", "direct communication"],
+      "phase": "build — no clients yet",
+      "team": "solo",
+      "website": "none",
+      "client_acquisition": ["personal network", "word of mouth"]
+    },
+    "section_3_priorities": {
+      "next_4_6_weeks": [
+        "Find first clients",
+        "Help people create CV and apply for Ausbildung or jobs"
+      ],
+      "blockers": [
+        "No clear system",
+        "Unsure how to organise the service"
+      ],
+      "success_in_3_months": [
+        "Have some clients",
+        "Have a simple system to help people"
+      ]
+    },
+    "section_4_automate": {
+      "repeating_tasks": [
+        "Collecting client information",
+        "Creating and formatting CV and motivation letters",
+        "Helping with Ausbildung / job / university applications",
+        "Communicating with clients on WhatsApp"
+      ],
+      "wants_help_with": [
+        "Simple intake form to collect client information",
+        "CV and motivation letter templates (German standard)",
+        "WhatsApp message templates (communication and follow-up)",
+        "Simple system to track clients and their progress"
+      ],
+      "tools": {
+        "current": ["WhatsApp", "Word", "PDF"],
+        "future_maybe": ["Google Docs", "Notion"]
+      }
+    }
+  }
+}
