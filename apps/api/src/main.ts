@@ -17,6 +17,8 @@ async function bootstrap() {
       'https://isac-plum.vercel.app',
       'https://isac-lonagwx5k-isachubs-projects.vercel.app',
     ],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
 
