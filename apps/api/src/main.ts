@@ -35,9 +35,10 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT || 3001;
-  await app.listen(port);
-  console.log(`ISAC API running on http://localhost:${port}/api/v1`);
+  const port = Number(process.env.PORT) || 3001;
+  await app.listen(port, '0.0.0.0');
+
+  logger.log(`ISAC API running on port ${port}`);
 }
 
 bootstrap();
