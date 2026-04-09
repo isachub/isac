@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,6 +7,8 @@ import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -23,9 +25,19 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    const user = await this.prisma.user.create({
-      data: { email: dto.email, passwordHash },
-    });
+    let user: { id: string; email: string };
+    try {
+      user = await this.prisma.user.create({
+        data: { email: dto.email, passwordHash },
+      });
+    } catch (err: unknown) {
+      // P2002 = unique constraint violation (race condition between findUnique and create)
+      if ((err as { code?: string })?.code === 'P2002') {
+        throw new ConflictException('Email already in use');
+      }
+      this.logger.error('register: user.create failed', err instanceof Error ? err.message : String(err));
+      throw new InternalServerErrorException('Registration failed. Please try again.');
+    }
 
     return this.sign(user.id, user.email);
   }
