@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// USER
+// Holds login credentials only.
+// Personal data lives in Profile (1-to-1).
+// ─────────────────────────────────────────────
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile      Profile?
+  applications Application[]
+}
+
+// ─────────────────────────────────────────────
+// PROFILE
+// One profile per user.
+// ─────────────────────────────────────────────
+model Profile {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName    String?
+  phone       String?
+  city        String?
+  country     String?
+  dateOfBirth DateTime?
+  nationality String?
+  targetType  TargetType?
+
+  updatedAt   DateTime    @updatedAt
+}
+
+enum TargetType {
+  JOB
+  AUSBILDUNG
+  STUDIUM
+}
+
+// ─────────────────────────────────────────────
+// APPLICATION
+// One document generation request per target.
+// AI-generated content added in step 7.
+// ─────────────────────────────────────────────
+model Application {
+  id                    String            @id @default(cuid())
+  userId                String
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  targetType            TargetType
+  titleOrRole           String
+  companyOrInstitution  String
+  targetDescription     String?
+
+  // AI-generated outputs (step 7)
+  generatedCv           String?
+  generatedLetter       String?
+
+  status                ApplicationStatus @default(DRAFT)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+}
+
+enum ApplicationStatus {
+  DRAFT
+  GENERATED
+  SENT
+}
