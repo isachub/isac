@@ -15,7 +15,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'https://isac-plum.vercel.app',
-      'https://isac-g06iyprf3-isachubs-projects.vercel.app',
+      'https://isac-lonagwx5k-isachubs-projects.vercel.app',
     ],
     credentials: true,
   });
