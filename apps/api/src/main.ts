@@ -28,7 +28,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'https://isac-plum.vercel.app',
-      /^https:\/\/isac-[a-z0-9]+-isachubs-projects\.vercel\.app$/,
+      /^https:\/\/isac-[a-z0-9-]+-isachubs-projects\.vercel\.app$/,
     ],
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
