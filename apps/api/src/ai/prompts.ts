@@ -1,74 +1,100 @@
 // Pure functions that build prompts from data.
 // No API calls here — only string construction.
 
-interface ProfileData {
-  fullName?: string | null;
-  city?: string | null;
-  country?: string | null;
-  dateOfBirth?: Date | null;
-  nationality?: string | null;
-  targetType?: string | null;
+import type { ProfileInput, ApplicationInput } from './ai.service';
+
+function formatAddress(p: ProfileInput): string {
+  const parts = [
+    p.street,
+    [p.postalCode, p.city].filter(Boolean).join(' '),
+    p.country,
+  ].filter(Boolean);
+  return parts.join(', ') || 'Nicht angegeben';
 }
 
-interface ApplicationData {
-  targetType: string;
-  titleOrRole: string;
-  companyOrInstitution: string;
-  targetDescription?: string | null;
+function formatDate(d: Date | string | null | undefined): string {
+  if (!d) return 'Nicht angegeben';
+  return new Date(d).toLocaleDateString('de-DE');
 }
 
-export function buildCvPrompt(profile: ProfileData, application: ApplicationData): string {
+export function buildCvPrompt(profile: ProfileInput, application: ApplicationInput): string {
   return `Du bist ein professioneller Lebenslauf-Schreiber für den deutschen Arbeitsmarkt.
 
-Erstelle einen professionellen deutschen Lebenslauf (Lebenslauf) basierend auf den folgenden Informationen.
+Erstelle einen professionellen deutschen tabellarischen Lebenslauf auf Basis der folgenden Daten.
 
-PROFILDATEN:
-- Name: ${profile.fullName ?? 'Nicht angegeben'}
-- Wohnort: ${[profile.city, profile.country].filter(Boolean).join(', ') || 'Nicht angegeben'}
-- Geburtsdatum: ${profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString('de-DE') : 'Nicht angegeben'}
-- Nationalität: ${profile.nationality ?? 'Nicht angegeben'}
+═══ PERSÖNLICHE DATEN ═══
+Name:           ${profile.fullName ?? 'Nicht angegeben'}
+Adresse:        ${formatAddress(profile)}
+Telefon:        ${profile.phone ?? 'Nicht angegeben'}
+E-Mail:         ${profile.email ?? 'Nicht angegeben'}
+Geburtsdatum:   ${formatDate(profile.dateOfBirth)}
+Nationalität:   ${profile.nationality ?? 'Nicht angegeben'}
 
-ZIEL:
-- Bewerbertyp: ${application.targetType}
-- Position / Ausbildung / Studiengang: ${application.titleOrRole}
-- Unternehmen / Institution: ${application.companyOrInstitution}
-${application.targetDescription ? `- Beschreibung: ${application.targetDescription}` : ''}
+═══ KURZPROFIL / ZUSAMMENFASSUNG ═══
+${profile.summary?.trim() || 'Nicht angegeben'}
 
-ANWEISUNGEN:
-- Schreibe auf Deutsch
-- Halte dich an das deutsche Lebenslauf-Format (tabellarischer Lebenslauf)
-- Strukturiere den Lebenslauf klar mit Abschnitten: Persönliche Daten, Berufserfahrung, Ausbildung, Kenntnisse
-- Wenn bestimmte Informationen fehlen, lasse den entsprechenden Abschnitt professionell leer oder mit einem Platzhalter
+═══ BERUFSERFAHRUNG ═══
+${profile.workExperience?.trim() || 'Nicht angegeben'}
+
+═══ AUSBILDUNG / BILDUNGSWEG ═══
+${profile.education?.trim() || 'Nicht angegeben'}
+
+═══ KENNTNISSE & FÄHIGKEITEN ═══
+${profile.skills?.trim() || 'Nicht angegeben'}
+
+═══ SPRACHKENNTNISSE ═══
+${profile.languages?.trim() || 'Nicht angegeben'}
+
+${profile.certificates?.trim() ? `═══ ZERTIFIKATE & WEITERBILDUNGEN ═══\n${profile.certificates.trim()}\n\n` : ''}═══ BEWERBUNGSZIEL ═══
+Typ:            ${application.targetType}
+Position:       ${application.titleOrRole}
+Unternehmen:    ${application.companyOrInstitution}
+${application.targetDescription ? `Stellenbeschreibung:\n${application.targetDescription}` : ''}
+
+═══ ANWEISUNGEN ═══
+- Schreibe ausschließlich auf Deutsch
+- Nutze das klassische deutsche tabellarische Lebenslauf-Format
+- Strukturiere mit klaren Abschnitten: Persönliche Daten → Berufserfahrung → Ausbildung → Kenntnisse → Sprachen
+- Wenn Informationen fehlen oder "Nicht angegeben" sind, lasse den Abschnitt weg oder setze einen professionellen Platzhalter
+- Richte den Fokus auf die angestrebte Position
 - Gib NUR den fertigen Lebenslauf-Text aus — keine Erklärungen, keine Kommentare
 
 Lebenslauf:`;
 }
 
-export function buildLetterPrompt(profile: ProfileData, application: ApplicationData): string {
+export function buildLetterPrompt(profile: ProfileInput, application: ApplicationInput): string {
   return `Du bist ein professioneller Bewerbungsschreiben-Verfasser für den deutschen Arbeitsmarkt.
 
-Schreibe ein vollständig personalisiertes deutsches Anschreiben (Motivationsschreiben) basierend auf den folgenden Informationen.
+Schreibe ein vollständig personalisiertes deutsches Anschreiben auf Basis der folgenden Daten.
 
-PROFILDATEN:
-- Name: ${profile.fullName ?? 'Bewerber/in'}
-- Wohnort: ${[profile.city, profile.country].filter(Boolean).join(', ') || 'Nicht angegeben'}
-- Nationalität: ${profile.nationality ?? 'Nicht angegeben'}
+═══ ABSENDER ═══
+Name:    ${profile.fullName ?? 'Bewerber/in'}
+Adresse: ${formatAddress(profile)}
+Telefon: ${profile.phone ?? 'Nicht angegeben'}
+E-Mail:  ${profile.email ?? 'Nicht angegeben'}
 
-BEWERBUNGSZIEL:
-- Typ: ${application.targetType}
-- Position / Ausbildung / Studiengang: ${application.titleOrRole}
-- Unternehmen / Institution: ${application.companyOrInstitution}
-${application.targetDescription ? `- Details zur Stelle / zum Unternehmen:\n${application.targetDescription}` : ''}
+═══ PERSÖNLICHES PROFIL ═══
+Nationalität:    ${profile.nationality ?? 'Nicht angegeben'}
+Zusammenfassung: ${profile.summary?.trim() || 'Nicht angegeben'}
+Berufserfahrung: ${profile.workExperience?.trim() || 'Nicht angegeben'}
+Ausbildung:      ${profile.education?.trim() || 'Nicht angegeben'}
+Sprachen:        ${profile.languages?.trim() || 'Nicht angegeben'}
 
-STRENGE REGELN:
-- Schreibe auf Deutsch
-- Nenne das Unternehmen / die Institution namentlich im Anschreiben
+═══ BEWERBUNGSZIEL ═══
+Typ:         ${application.targetType}
+Position:    ${application.titleOrRole}
+Unternehmen: ${application.companyOrInstitution}
+${application.targetDescription ? `\nDetails zur Stelle / zum Unternehmen:\n${application.targetDescription}` : ''}
+
+═══ STRENGE REGELN ═══
+- Schreibe ausschließlich auf Deutsch
+- Nenne das Unternehmen / die Institution namentlich
 - Beziehe dich direkt auf die angestrebte Position
-- Keine generischen Sätze wie "Ich bin motiviert" ohne konkreten Beweis
-- Verbinde die Stärken des Bewerbers mit den Anforderungen der Stelle
+- Keine generischen Floskeln ohne konkreten Bezug zur Person
+- Verbinde den Hintergrund des Bewerbers mit den Anforderungen der Stelle
 - Professioneller, klarer und natürlicher Ton
 - Maximal eine Seite
-- Struktur: Einleitung → Erfahrung & Hintergrund → Motivation & Eignung → Abschluss
+- Struktur: Einleitung (Bezug zur Stelle) → Erfahrung & Hintergrund → Motivation & Eignung → Abschluss (Einladung zum Gespräch)
 - Gib NUR das fertige Anschreiben aus — keine Erklärungen, keine Kommentare
 
 Anschreiben:`;

@@ -3,21 +3,30 @@ import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { buildCvPrompt, buildLetterPrompt } from './prompts';
 
-interface GenerateInput {
-  profile: {
-    fullName?: string | null;
-    city?: string | null;
-    country?: string | null;
-    dateOfBirth?: Date | null;
-    nationality?: string | null;
-    targetType?: string | null;
-  };
-  application: {
-    targetType: string;
-    titleOrRole: string;
-    companyOrInstitution: string;
-    targetDescription?: string | null;
-  };
+export interface ProfileInput {
+  fullName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  street?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+  country?: string | null;
+  dateOfBirth?: Date | null;
+  nationality?: string | null;
+  summary?: string | null;
+  workExperience?: string | null;
+  education?: string | null;
+  skills?: string | null;
+  languages?: string | null;
+  certificates?: string | null;
+  targetType?: string | null;
+}
+
+export interface ApplicationInput {
+  targetType: string;
+  titleOrRole: string;
+  companyOrInstitution: string;
+  targetDescription?: string | null;
 }
 
 interface GenerateOutput {
@@ -36,11 +45,13 @@ export class AiService {
     this.client = new Anthropic({ apiKey });
   }
 
-  async generate(input: GenerateInput): Promise<GenerateOutput> {
+  async generate(input: { profile: ProfileInput; application: ApplicationInput }): Promise<GenerateOutput> {
     const cvPrompt = buildCvPrompt(input.profile, input.application);
     const letterPrompt = buildLetterPrompt(input.profile, input.application);
 
-    this.logger.log(`Generating CV and letter for: ${input.application.titleOrRole} at ${input.application.companyOrInstitution}`);
+    this.logger.log(
+      `Generating documents for: ${input.application.titleOrRole} at ${input.application.companyOrInstitution}`,
+    );
 
     try {
       const [cvResponse, letterResponse] = await Promise.all([
@@ -48,13 +59,16 @@ export class AiService {
         this.callClaude(letterPrompt),
       ]);
 
-      return {
-        generatedCv: cvResponse,
-        generatedLetter: letterResponse,
-      };
-    } catch (error) {
+      return { generatedCv: cvResponse, generatedLetter: letterResponse };
+    } catch (error: unknown) {
+      // Log the full error so Railway logs show the real cause
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`AI generation failed: ${message}`);
+      const status = (error as { status?: number })?.status;
+      const errorType = error instanceof Error ? error.constructor.name : typeof error;
+      this.logger.error(
+        `AI generation failed [${errorType}${status ? ` HTTP ${status}` : ''}]: ${message}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException('Document generation failed. Please try again.');
     }
   }

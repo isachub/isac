@@ -5,7 +5,7 @@ import { AppModule } from './app.module';
 const logger = new Logger('Bootstrap');
 
 function validateEnv() {
-  const required = ['DATABASE_URL', 'JWT_SECRET'];
+  const required = ['DATABASE_URL', 'JWT_SECRET', 'ANTHROPIC_API_KEY'];
   const missing = required.filter((key) => !process.env[key]);
   if (missing.length) {
     logger.error(`Missing required environment variables: ${missing.join(', ')}`);

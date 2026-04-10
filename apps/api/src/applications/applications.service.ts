@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
@@ -11,6 +12,8 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 
 @Injectable()
 export class ApplicationsService {
+  private readonly logger = new Logger(ApplicationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly ai: AiService,
@@ -31,38 +34,43 @@ export class ApplicationsService {
   }
 
   async findOne(userId: string, id: string) {
-    const application = await this.prisma.application.findUnique({
-      where: { id },
-    });
-
+    const application = await this.prisma.application.findUnique({ where: { id } });
     if (!application) throw new NotFoundException('Application not found');
     if (application.userId !== userId) throw new ForbiddenException('Access denied');
-
     return application;
   }
 
   async generate(userId: string, id: string) {
-    const [application, profile] = await Promise.all([
+    const [application, profile, user] = await Promise.all([
       this.prisma.application.findUnique({ where: { id } }),
       this.prisma.profile.findUnique({ where: { userId } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } }),
     ]);
 
     if (!application) throw new NotFoundException('Application not found');
     if (application.userId !== userId) throw new ForbiddenException('Access denied');
-    if (!profile) throw new BadRequestException('Profile not found. Please complete your profile before generating documents.');
+    if (!profile) {
+      throw new BadRequestException(
+        'Profile not found. Please complete your profile before generating documents.',
+      );
+    }
+
+    this.logger.log(
+      `generate: userId=${userId} applicationId=${id} ` +
+      `target="${application.titleOrRole}" at "${application.companyOrInstitution}"`,
+    );
 
     const { generatedCv, generatedLetter } = await this.ai.generate({
-      profile,
+      profile: {
+        ...profile,
+        email: user?.email ?? null,
+      },
       application,
     });
 
     return this.prisma.application.update({
       where: { id },
-      data: {
-        generatedCv,
-        generatedLetter,
-        status: 'GENERATED',
-      },
+      data: { generatedCv, generatedLetter, status: 'GENERATED' },
     });
   }
 
@@ -74,11 +82,12 @@ export class ApplicationsService {
 
     if (!application) throw new NotFoundException('Application not found');
     if (application.userId !== userId) throw new ForbiddenException('Access denied');
-    if (!application.generatedCv) throw new BadRequestException('CV not generated yet. Call /generate first.');
+    if (!application.generatedCv) {
+      throw new BadRequestException('CV not generated yet. Call /generate first.');
+    }
 
     const buffer = await this.pdf.generateCv(profile?.fullName ?? null, application.generatedCv);
-    const name = this.slugName(profile?.fullName);
-    return { buffer, filename: `${name}_Lebenslauf.pdf` };
+    return { buffer, filename: `${this.slugName(profile?.fullName)}_Lebenslauf.pdf` };
   }
 
   async exportLetterPdf(userId: string, id: string): Promise<{ buffer: Buffer; filename: string }> {
@@ -89,11 +98,12 @@ export class ApplicationsService {
 
     if (!application) throw new NotFoundException('Application not found');
     if (application.userId !== userId) throw new ForbiddenException('Access denied');
-    if (!application.generatedLetter) throw new BadRequestException('Letter not generated yet. Call /generate first.');
+    if (!application.generatedLetter) {
+      throw new BadRequestException('Letter not generated yet. Call /generate first.');
+    }
 
     const buffer = await this.pdf.generateLetter(profile?.fullName ?? null, application.generatedLetter);
-    const name = this.slugName(profile?.fullName);
-    return { buffer, filename: `${name}_Motivationsschreiben.pdf` };
+    return { buffer, filename: `${this.slugName(profile?.fullName)}_Motivationsschreiben.pdf` };
   }
 
   private slugName(fullName?: string | null): string {

@@ -32,14 +32,25 @@ model Profile {
   userId      String      @unique
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Personal / contact data
   fullName    String?
   phone       String?
+  street      String?
+  postalCode  String?
   city        String?
   country     String?
   dateOfBirth DateTime?
   nationality String?
-  targetType  TargetType?
 
+  // CV content — free text, used directly in AI prompts
+  summary        String?   // short professional summary / about me
+  workExperience String?   // work history, one entry per line recommended
+  education      String?   // education history, one entry per line recommended
+  skills         String?   // technical and professional skills
+  languages      String?   // e.g. "Deutsch (B2), Englisch (B1), Arabisch (Muttersprache)"
+  certificates   String?   // optional certifications and courses
+
+  targetType  TargetType?
   updatedAt   DateTime    @updatedAt
 }
 

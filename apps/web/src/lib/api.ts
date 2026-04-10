@@ -80,10 +80,18 @@ export type Profile = {
   id?: string;
   fullName?: string;
   phone?: string;
+  street?: string;
+  postalCode?: string;
   city?: string;
   country?: string;
   dateOfBirth?: string;
   nationality?: string;
+  summary?: string;
+  workExperience?: string;
+  education?: string;
+  skills?: string;
+  languages?: string;
+  certificates?: string;
   targetType?: 'JOB' | 'AUSBILDUNG' | 'STUDIUM';
 };
 
