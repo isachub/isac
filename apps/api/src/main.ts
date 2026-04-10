@@ -7,6 +7,7 @@ const logger = new Logger('Bootstrap');
 function validateEnv() {
   const required = ['DATABASE_URL', 'JWT_SECRET', 'ANTHROPIC_API_KEY'];
   const missing = required.filter((key) => !process.env[key]);
+
   if (missing.length) {
     logger.error(`Missing required environment variables: ${missing.join(', ')}`);
     process.exit(1);
@@ -15,6 +16,12 @@ function validateEnv() {
 
 async function bootstrap() {
   validateEnv();
+
+  console.log('ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
+  console.log(
+    'ANTHROPIC_API_KEY prefix:',
+    process.env.ANTHROPIC_API_KEY?.slice(0, 12),
+  );
 
   const app = await NestFactory.create(AppModule);
 
@@ -35,4 +42,7 @@ async function bootstrap() {
   logger.log(`ISAC API running on port ${port}`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('BOOTSTRAP FAILED:', err);
+  process.exit(1);
+});
